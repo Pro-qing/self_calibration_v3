@@ -19,6 +19,9 @@ LidarCalibration::LidarCalibration(ros::NodeHandle& nh) : nh_(nh)
     nh_.param<std::string>("base_frame", base_frame_, "base_link");
     nh_.param<std::string>("mid_frame", mid_frame_, "mid_lidar");
     
+    // [新增] 读取 YAML 文件保存路径
+    nh_.param<std::string>("save_path", save_path_, "~/laser_self_calibration_workspace/src/self_calibration_v3/param/lidar_calibration.yaml");
+
     nh_.param<float>("actual_left_distance", actual_left_dist_, 0.0f);   
     nh_.param<float>("actual_right_distance", actual_right_dist_, 0.0f);
     nh_.param<float>("actual_front_distance", actual_front_dist_, 0.0f); 
@@ -191,6 +194,14 @@ void LidarCalibration::midPointCloudCallback(const sensor_msgs::PointCloud2::Con
         Eigen::Matrix4f T_final = getSmoothedResult();
         
         printFinalResult(T_final);
+
+        // ========================================================
+        // [新增] 当平滑窗口满了之后，将结果实时覆盖写入 YAML 文件
+        // ========================================================
+        if (calibration_queue_.size() >= SMOOTH_WINDOW_SIZE) {
+            saveToYAML(T_final, save_path_);
+        }
+
         
         // ========================================================
         // [新增] 发布转换后的点云到 /velodyne_points_mid
@@ -431,6 +442,54 @@ void LidarCalibration::printFinalResult(const Eigen::Matrix4f& T)
     std::cout << "  pitch: " << toDegrees(e[1]) << " deg" << std::endl;
     std::cout << "  yaw:   " << toDegrees(e[0]) << " deg" << std::endl;
     std::cout << "============================================" << std::endl;
+}
+
+// [新增] 将标定结果保存为 YAML 格式
+void LidarCalibration::saveToYAML(const Eigen::Matrix4f& T, const std::string& filename)
+{
+    std::ofstream out(filename);
+    if (!out.is_open()) {
+        ROS_ERROR_THROTTLE(1.0, "无法打开文件以保存标定结果: %s", filename.c_str());
+        return;
+    }
+
+    Eigen::Vector3f t = T.block<3,1>(0,3);
+    // eulerAngles(2,1,0) 返回的是 [yaw, pitch, roll]
+    Eigen::Vector3f e = T.block<3,3>(0,0).eulerAngles(2,1,0); 
+    Eigen::Quaternionf q(T.block<3,3>(0,0));
+
+    out << std::fixed << std::setprecision(6);
+    out << "lidar_extrinsics:\n";
+    out << "  parent_frame: \"" << lidar_frame_ << "\"\n";
+    out << "  child_frame: \"" << mid_frame_ << "\"\n";
+    
+    out << "  translation: [x, y, z]\n";
+    out << "    x: " << t.x() << "\n";
+    out << "    y: " << t.y() << "\n";
+    out << "    z: " << t.z() << "\n";
+    
+    out << "  rotation_euler_rad: [roll, pitch, yaw]\n";
+    out << "    roll: " << e[2] << "\n";
+    out << "    pitch: " << e[1] << "\n";
+    out << "    yaw: " << e[0] << "\n";
+
+    out << "  rotation_euler_deg: [roll, pitch, yaw]\n";
+    out << "    roll: " << toDegrees(e[2]) << "\n";
+    out << "    pitch: " << toDegrees(e[1]) << "\n";
+    out << "    yaw: " << toDegrees(e[0]) << "\n";
+    
+    out << "  rotation_quaternion: [x, y, z, w]\n";
+    out << "    x: " << q.x() << "\n";
+    out << "    y: " << q.y() << "\n";
+    out << "    z: " << q.z() << "\n";
+    out << "    w: " << q.w() << "\n";
+    
+    out << "  transformation_matrix:\n";
+    for (int i = 0; i < 4; ++i) {
+        out << "    - [" << T(i,0) << ", " << T(i,1) << ", " << T(i,2) << ", " << T(i,3) << "]\n";
+    }
+
+    out.close();
 }
 
 float LidarCalibration::toRadians(float d) { return d * M_PI / 180.0f; }

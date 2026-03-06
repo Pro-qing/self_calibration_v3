@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <deque>
+#include <fstream> 
 
 struct LaserLine {
     float avg_distance; 
@@ -67,6 +68,10 @@ private:
     // 新增：发布转换后的点云
     void publishTransformedMidCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, 
                                    const Eigen::Matrix4f& T_mid_to_velo);
+
+    // [新增] 用于保存 YAML 文件的路径和函数
+    std::string save_path_;
+    void saveToYAML(const Eigen::Matrix4f& T, const std::string& lidar_calibration);
     
     float toRadians(float d);
     float toDegrees(float r);
