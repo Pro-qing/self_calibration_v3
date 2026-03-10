@@ -24,5 +24,8 @@
         <param name="manual_lidar_height" type="double" value="1.95" />
         
         <!-- 注意：现在订阅的是 /points_16，16线的激光雷达数据 -->
+
+        <!-- 保存路径 -->
+        <param name="save_path" value="/home/getq/laser_self_calibration_workspace/src/self_calibration_v3/param/lidar_calibration.yaml" />
     </node>
 </launch>
