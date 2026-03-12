@@ -16,12 +16,12 @@
         <param name="test_rotate_roll" type="double" value="0.0" />
 
         <!-- 车间墙面的实际距离（必须根据实际车间测量设置） -->
-        <param name="actual_left_distance" type="double" value="0.89" />
-        <param name="actual_right_distance" type="double" value="1.11" />
-        <param name="actual_front_distance" type="double" value="2.30" />
+        <param name="actual_left_distance" type="double" value="0.73" />
+        <param name="actual_right_distance" type="double" value="0.645" />
+        <param name="actual_front_distance" type="double" value="2.70" />
                 
         <!-- 手动测量的雷达高度（必须根据实际车间测量设置）-->
-        <param name="manual_lidar_height" type="double" value="1.95" />
+        <param name="manual_lidar_height" type="double" value="1.92" />
         
         <!-- 注意：现在订阅的是 /points_16，16线的激光雷达数据 -->
 
